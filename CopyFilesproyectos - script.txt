@@ -1,0 +1,335 @@
+function main() {
+
+  var id = "1Y5fdjiJI973ESAuJLcHXhEkE_if9sNpe-gKBFPP4qGM"; //hoja equipos
+  var nombre = "EMC";
+  var equipos = SpreadsheetApp.openById(id).getSheetByName(nombre).getDataRange().getValues();
+  var hojaEquipos = SpreadsheetApp.openById(id).getSheetByName(nombre);
+  //crearArchivos(hojaEquipos,nombre,equipos);
+  
+  var folder = "1QX_KQFKRElv0KROykEslmpdD9Syp2ZqZ"; //carpeta proyectos
+  //changeAccess(folder,hojaEquipos,equipos);  
+
+  var id2 = "1EyF4vo-ddOd9cJfi_qpw30NYrQgAWKCG7GUG9V0SHIs"; //tableros de proyectos
+  var tablerosP = SpreadsheetApp.openById(id2).getSheetByName(nombre).getDataRange().getValues();
+  var hojaTablerosP = SpreadsheetApp.openById(id2).getSheetByName(nombre);
+  
+  //copyCells(folder,hojaTablerosP,tablerosP,true) //copia los comentarios del evaluador
+  
+  fileContent(folder); //crea plan de ruta
+  
+  var id3 = "19-hyrWyQTTwMzyvYOycaN0-ywwmGXC-zNrgDKr11PyY"; //plan de ruta
+  var planruta = SpreadsheetApp.openById(id3).getSheetByName("Estudiantes").getDataRange().getValues();
+  var hojaPlanRuta = SpreadsheetApp.openById(id3).getSheetByName("Estudiantes");
+  //naveganteConductor(folder,hojaPlanRuta,planruta)
+  
+  //verCuantoHanRespondido(folder,hojaTablerosP,tablerosP); // A LAS PREGUNTAS DEL ARCHIVO DE PROYECTOS
+  
+  var id4 = "1lgp-hYdmz01VCD_2IEoku-Pi93i9pICnd-FEMrzlmJk"; //hoja sitios web y video historias
+  var productos = SpreadsheetApp.openById(id4).getSheetByName(nombre).getDataRange().getValues();
+  var hojaProductos = SpreadsheetApp.openById(id4).getSheetByName(nombre);
+  //ponerEnlaces(folder,hojaProductos,productos); // pone enlaces de proyectos de estudiantes y del video de Antonio  
+  
+}
+
+function crearArchivos(hojaEquipos,nombre,equipos) {
+  
+  var ultimaFila = hojaEquipos.getLastRow();
+  var folder = DriveApp.createFolder("Carpeta Archivos Creación de proyectos " + nombre);
+  
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  
+  for (i = 0; i <= ultimaFila - 1; i++) {
+     var nombreEquipo = obtenerNombre(equipos, i, 0);
+     DriveApp.getFileById(sheet.getId()).makeCopy("A. de Creación de proyecto 3 " + nombreEquipo, folder);
+  } 
+
+}
+
+function changeAccess (folder,hojaEquipos,equipos) {
+  
+ // Log the name of every file in the user's Drive.
+
+var carpeta = DriveApp.getFolderById(folder);
+var files =  carpeta.getFiles();
+  while (files.hasNext()) {
+    var arch = files.next();
+    var name = arch.getName();
+    var nombre = name.split("A. de Creación de proyecto 3 ");
+    //Logger.log("soy name " + name); 
+    //Logger.log(nombre[1]);
+    var indice = buscarAlumno(hojaEquipos, nombre[1],equipos);
+    if (indice != -1) {
+      var mail1 = obtenerNombre(equipos, indice, 1);
+      var mail2 = obtenerNombre(equipos, indice, 2);
+      Logger.log(name + " " + mail1 + " " + mail2);
+      arch.addEditor(mail1);
+      arch.addEditor(mail2);
+    }
+  }
+return true;
+}
+
+function copyCells(folder,hojaTablerosP,tablerosP,uncomentario)
+{
+  var carpeta = DriveApp.getFolderById(folder);
+  var files =  carpeta.getFiles();
+  var hojita = "Diseño del producto computacional";
+  while (files.hasNext()) {
+    var arch = files.next();
+    var name = arch.getName();
+    var nombre = name.split("A. de Creación de proyecto 3 ");
+    var indice = buscarAlumno(hojaTablerosP, nombre[1],tablerosP);
+    var identificador = arch.getId(); //archivo de proyectos
+    //identificador = "1g7WEWYCB8iH8me2xa6zNcONyHzuI5JonNiWKFzd4F_I";
+    var archivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita).getDataRange().getValues();
+    var hojaArchivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita);
+    
+    if (indice != -1) {
+      //Logger.log(indice);
+      var comentarios = [];
+      var b = 0;
+      if (!uncomentario) {
+        for (i = 0; i <= 7; i++) {
+          comentarios[i] = tablerosP[indice][5+i];
+          if (i == 3) {b = 1;} 
+          if (i == 6) {b = 2;} 
+          var range = hojaArchivoP.getRange(3+i+b,3);
+          range.setValue(comentarios[i]);
+          Logger.log(comentarios[i]);
+        }
+      }
+      else {
+        comentarios[0] = tablerosP[indice][21];
+        comentarios[1] = tablerosP[indice][22];
+        var range = hojaArchivoP.getRange(12,3);
+        range.setValue(comentarios[0]);
+        range.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+        range.setWrap(true);
+        range = hojaArchivoP.getRange(13,3);
+        range.setValue(comentarios[1]);
+        range.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+        range.setWrap(true);
+      } 
+      
+      for (i=1;i<=3;i++) {
+        hojaArchivoP.setRowHeight(i, 45);
+        hojaArchivoP.setColumnWidth(i, 500);
+      }
+      //var range = hojaArchivoP.getRange(12,3);
+      //if (range.getValue() == "X") {
+        //range.setValue("");
+      //}
+    }
+  }
+}
+
+function fileContent(folder) {
+  
+  var carpeta = DriveApp.getFolderById(folder);
+  var files =  carpeta.getFiles();
+  var hojita = "Diseño del producto computacional";
+  while (files.hasNext()) {
+    var arch = files.next();
+    var identificador = arch.getId(); //archivo de proyectos
+    //identificador = "1Ul-fuXJybrgP7C7movkDayQa0QsPlHCtuA6CE_OShQE";
+    var archivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita).getDataRange().getValues();
+    var hojaArchivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita);
+    //hojaArchivoP.deleteRows(29, 1);
+    //hojaArchivoP.insertRows(2, 1);
+    //formatea(hojaArchivoP,1,"Enlace de su video historia",2);  
+    //formatea(hojaArchivoP,2,"                                                     Únicamente acceder al enlace de su historia cuando hayan resuelto hasta la pregunta 8",1);  
+    //hojaArchivoP.insertRows(23, 2);
+    formatea(hojaArchivoP,24,"                                                    ¿QUÉ HACER HOY?  PUBLICAR NUESTRA HISTORIA EN EL SITIO WEB",0);  
+    formatea(hojaArchivoP,25,"https://sites.google.com/new" ,4);
+    formatea(hojaArchivoP,26,"2. Hacer click en su sitio",0);
+    formatea(hojaArchivoP,27,"3. Ir a Paginas, arriba a la derecha y darle click",0);  
+    formatea(hojaArchivoP,28,"4. Darle click al signo + que está abajo a la derecha",0);  
+    formatea(hojaArchivoP,29,"5. Escribir 'Acoso escolar' y hacer click en Listo",0); 
+    formatea(hojaArchivoP,30,"6. Ir a Insertar, arriba a la derecha y darle click",0);
+    formatea(hojaArchivoP,31,"7. Ir a Cuadro de texto",0);
+     formatea(hojaArchivoP,32,"8. Escribir 'Nuestra historia'",0);  
+    formatea(hojaArchivoP,33,"9. Seleccionar 'Nuestra historia' y darle click al símbolo de enlazar (la argolla)",0);  
+    formatea(hojaArchivoP,34,"10. Escribir el enlace se su historia que está en el archivo de creación de proyecto, arriba a la derecha",0); 
+    formatea(hojaArchivoP,35,"11. Hacer click en Aplicar",0); 
+    //formatea(hojaArchivoP,12,"7. Cuentanos tu propia historia sobre el acoso escolar. Como ejemplo fijate cuál es la historia del video del Remix del Acoso Escolar / Valeria: Es la historia de Gato, un estudiante que era acosado por otro estudiante, Zombie. En el recreo, Zombie le golpeaba con la pelota en la cabeza a Gato y aparte le decía que Gato era un tonto. Mientras esto pasaba el estudiante Pinguino observaba, pero aunque no le parecía bien, prefería mantenerse callado. El estudiante Gato no se quedó callado y le dijo al licenciado Mago lo que estaba pasando. El licenciado Mago le pide avisarle la próxima vez que pase, pero mientras hacía esto el estudiante Zombie se da cuenta que el estudiante Gato lo está acusando con el licen Mago y decide tomar venganza y regresa a pegarle nuevamente a Gato. Pinguino vuelve a ver el acoso de Zombie contra, pero esta vez decide no permitir que esto siga ocurriendo y corre a avisarle al licenciado Mago lo que acaba de presenciar. El licen Mago esta vez sí le dice al Director lo que está pasando para que se tomen las medidas correspondientes y se terminen las agresiones de una vez por todas contra el estudiante Gato. Cómo mensaje final tenemos: No seas parte del acoso escolar. No permitas que a otros les hagan, lo que a ti no te gustaría que te hicieran.",3);
+    //formatea(hojaArchivoP,13,"8. En tu historia sobre el Acoso Escolar dinos ¿quiénes son tus personajes?: ¿quién es el agresor, quienes son los espectadores y quién es la víctima? En el ejemplo del Remix del Acoso Escolar / Valeria, Zombie es el agresor, Gato es la víctima y Pinguino es el espectador",3);
+    //hojaArchivoP.deleteRows(29, 1);
+  }
+}
+
+function naveganteConductor(folder,hojaPlanRuta,planruta) {
+
+  var carpeta = DriveApp.getFolderById(folder);
+  var files =  carpeta.getFiles();
+  var hojita = "Diseño del producto computacional";
+  while (files.hasNext()) {
+    var arch = files.next();
+    var name = arch.getName();
+    var nombre = name.split("A. de Creación de proyecto 3 ");
+    var indice = buscarAlumno(hojaPlanRuta, nombre[1],planruta);
+    var identificador = arch.getId(); //archivo de proyectos
+    //identificador = "1k9zTdduPJVgiZJGfeL05dXjnfp4YXaNEn_jxG4UOqLM";
+    //Logger.log(identificador);
+    var archivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita).getDataRange().getValues();
+    var hojaArchivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita);
+    if (indice != -1) {
+      var team = nombre[1].split(" y ");
+      var chico = planruta[indice][4];
+      var rol = planruta[indice][5];
+      var nc = team[0] + " " + rol;
+      if (team[1] != undefined ) {
+        if (indice < planruta.length-1) { indice++;}
+        var chico1  = planruta[indice][4];
+        var rol1 = planruta[indice][5];
+        nc = nc + " " + team[1] + " " + rol1;
+        Logger.log(chico + " " + rol + " " + chico1 + " " + rol1);
+      }
+      else {
+        Logger.log(chico + " " + rol);
+      }
+      Logger.log(nc);
+      var range = hojaArchivoP.getRange(1,2);
+      range.setValue(nc);
+    }
+  }
+}
+
+function verCuantoHanRespondido (folder,hojaTablerosP,tablerosP) {
+  var carpeta = DriveApp.getFolderById(folder);
+  var files =  carpeta.getFiles();
+  var hojita = "Diseño del producto computacional";
+  var lastcolumn = hojaTablerosP.getLastColumn();
+  while (files.hasNext()) {
+    var arch = files.next();
+    var name = arch.getName();
+    var nombre = name.split("A. de Creación de proyecto 3 ");
+    var indice = buscarAlumno(hojaTablerosP, nombre[1],tablerosP);
+    var identificador = arch.getId(); //archivo de proyectos
+    //var identificador = "1XjwTKRIqM28IqtNSR6bJUArukYldyn6LNnGTUd-VTIY";
+    var archivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita).getDataRange().getValues();
+    var hojaArchivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita);
+    
+    if (indice != -1) {
+      var comentarios = [];
+      for (i = 2; i <= 14; i++) {
+        comentarios[i] = archivoP[i][1];
+        //Logger.log(comentarios[i]);
+      }
+      var counter = 0;
+      for (i = 2; i <= 14; i++) {
+        if (comentarios[i].length >0)
+          counter++;
+      }
+      Logger.log(counter);
+      //Logger.log(indice + "  " + lastcolumn);
+      var range = hojaTablerosP.getRange(indice+1,lastcolumn);
+      range.setValue(counter);
+      //range.setValue("nada");
+    }
+  }
+}
+
+function ponerEnlaces (folder,hojaProductos,productos) {
+  
+ // Log the name of every file in the user's Drive.
+
+var carpeta = DriveApp.getFolderById(folder);
+var files =  carpeta.getFiles();
+var hojita = "Diseño del producto computacional"; 
+while (files.hasNext()) {
+    var arch = files.next();
+    var name = arch.getName();
+    var nombre = name.split("A. de Creación de proyecto 3 ");
+    Logger.log("soy name " + name); 
+    Logger.log(nombre[1]);
+    var indice = buscarAlumno(hojaProductos, nombre[1],productos);
+    if (indice != -1) {
+      var enlace = obtenerNombre(productos, indice, 2);
+      Logger.log(nombre[1] + " " + enlace);
+      var identificador = arch.getId(); //archivo de proyectos
+      //identificador = "1vEg2Sxufg7F-zCX8ONgxExTVLCJC2fHog_rNMFYA3bo";
+      var archivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita).getDataRange().getValues();
+      var hojaArchivoP = SpreadsheetApp.openById(identificador).getSheetByName(hojita);
+      var range = hojaArchivoP.getRange(1,3);
+      //range.setFormula("=HIPERVINCULO(\"" + enlace + "\";\"Enlace de su video historia\")");
+      range.setValue(enlace);
+      range.setShowHyperlink(true);
+      range.setWrap(true);
+      //range = hojaArchivoP.getRange(1,2);
+      //var valor = range.getValue();
+      //range.setValue(valor + "         Enlace a nuestro video historia: ");
+      
+    }
+}
+return true;
+}
+
+function formatea(hojaArchivoP,fila,texto,color) {
+  //var range = hojaArchivoP.getRange(fila,1);
+  if (color == 2) {
+    var range = hojaArchivoP.getRange(fila,3);
+    range.setValue(texto);
+    return;
+  }
+  if (color == 3) {
+    var range = hojaArchivoP.getRange(fila,1);
+    range.setValue(texto);
+    range.setWrap(true);
+    return;
+  }
+  if (color == 4) {
+    var range = hojaArchivoP.getRange(fila,1);
+    range = hojaArchivoP.getRange(fila,1);
+    range.setValue("1. Entren a este link:");
+    range = hojaArchivoP.getRange(fila,2);
+    range.setValue(texto);
+    range.setShowHyperlink(true);
+    return;
+  }
+
+  var rango = 'A' + fila + ':' + 'C' + fila;
+  var range = hojaArchivoP.getRange(rango);
+  range.merge();
+  range.sett
+  if (color == 0)
+    range.setBackground("#a61c00");
+  else {
+    range.setBackground("#0000ff");
+    range.setFontSize(14);
+  }
+  range.setValue(texto);
+  range.setFontColor("#ffffff");
+  range.setFontWeight("bold");
+  range.setWrap(true);
+  
+  return;
+}
+
+function obtenerNombre(hoja, indice_fila, indice_columna){
+  
+  var fila = hoja[indice_fila];
+  var valorCelda = fila[indice_columna];
+  
+  Logger.log('valorcelda OBTENER NOMBRE '+ valorCelda);
+ 
+  return valorCelda;
+  
+}
+
+
+// Retorna numero de fila en la que se ubica un alumno dado el nombre
+function buscarAlumno(hojaEquipos, nombre,equipos) {
+
+    //Fila donde estan ubicados los nombres en la hoja de avance.
+    var n = 0;
+    var ultimaFila = hojaEquipos.getLastRow();
+   
+    for (k = 0; k <= ultimaFila - 1; k++) {
+        var nombreEquipo = obtenerNombre(equipos, k, 0);
+        //Logger.log("soy nombre " + nombre + " soy nombreEquipo " + nombreEquipo);
+        if (nombreEquipo == nombre) {
+            return k;
+        }
+    }
+    return -1;
+}
